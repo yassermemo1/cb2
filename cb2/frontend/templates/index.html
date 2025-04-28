@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbon Black Multi-Tenant Console</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #333;
+            --light-bg: #f5f5f5;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+        }
+        
+        header h1 {
+            margin-bottom: 0.5rem;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+        
+        nav ul li {
+            margin-right: 1rem;
+        }
+        
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+        
+        nav ul li a:hover {
+            text-decoration: underline;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            padding: 1rem;
+        }
+        
+        .card-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header h2 {
+            margin: 0;
+        }
+        
+        .button {
+            display: inline-block;
+            background: var(--accent-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .button-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        
+        .button-danger {
+            background: var(--danger-color);
+        }
+        
+        .button-success {
+            background: var(--success-color);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        table th, table td {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        table th {
+            background-color: var(--light-bg);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            color: white;
+        }
+        
+        .status-connected {
+            background-color: var(--success-color);
+        }
+        
+        .status-error {
+            background-color: var(--danger-color);
+        }
+        
+        .status-unknown {
+            background-color: var(--warning-color);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            width: 50%;
+            border-radius: 5px;
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .alert {
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+        }
+        
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .tab-container {
+            margin-bottom: 1rem;
+        }
+        
+        .tab-nav {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab-nav button {
+            background: none;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+        
+        .tab-nav button.active {
+            border-bottom: 2px solid var(--accent-color);
+            opacity: 1;
+        }
+        
+        .tab-content {
+            padding: 1rem 0;
+        }
+        
+        .tab-pane {
+            display: none;
+        }
+        
+        .tab-pane.active {
+            display: block;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .filter-options {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--light-bg);
+            border-radius: 4px;
+        }
+        
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .filter-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .filter-item {
+                flex: 100%;
+            }
+        }
+        
+        /* Detail modal styling */
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+        
+        .detail-table th {
+            text-align: left;
+            width: 30%;
+            padding: 0.5rem;
+            background-color: var(--light-bg);
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .detail-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .agent-info-section {
+            margin-bottom: 2rem;
+        }
+        
+        .agent-info-section h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .agent-actions-section {
+            background-color: var(--light-bg);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .modal-content {
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .agent-detail-modal .modal-content {
+            width: 80%;
+        }
+        
+        /* Dashboard and stats styling */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .instance-specific-view {
+            margin-top: 2rem;
+        }
+        
+        /* License Management Styles */
+        .license-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .license-summary .stat-card {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        #license-instances-table,
+        #dropped-connections-table {
+            margin-bottom: 2rem;
+        }
+        
+        #licenses-view h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+        
+        .stat-info {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin-top: 0.5rem;
+        }
+        
+        .clickable {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .clickable:hover {
+            transform: scale(1.02);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .list-actions {
+            margin-bottom: 0.5rem;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Carbon Black Multi-Tenant Console</h1>
+            <nav>
+                <ul>
+                    <li><a href="#" class="nav-link" data-view="dashboard">Dashboard</a></li>
+                    <li><a href="#" class="nav-link active" data-view="instances">Instances</a></li>
+                    <li><a href="#" class="nav-link" data-view="agents">Agents</a></li>
+                    <li><a href="#" class="nav-link" data-view="licenses">License Management</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cbapi"><i class="fas fa-terminal"></i> API Console</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cbaudit"><i class="fas fa-clipboard-list"></i> Audit Logs</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="view hidden">
+            <h2>Dashboard</h2>
+            <div id="dashboard-loading" class="loading"></div>
+            <div id="dashboard-error" class="alert alert-danger hidden"></div>
+            
+            <div class="dashboard">
+                <div class="stat-card">
+                    <div class="stat-label">Total Instances</div>
+                    <div class="stat-number" id="total-instances">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Agents</div>
+                    <div class="stat-number" id="total-agents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Online Agents</div>
+                    <div class="stat-number" id="online-agents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Offline Agents</div>
+                    <div class="stat-number" id="offline-agents">0</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Activity</h3>
+                </div>
+                <table id="activity-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Event</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-list">
+                        <tr>
+                            <td colspan="3" style="text-align: center;">No recent activity</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    
+        <div id="instances-view" class="view">
+            <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                <h2>Carbon Black Instances</h2>
+                <div class="d-flex gap-2">
+                    <button id="importCsvBtn" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Import CSV
+                    </button>
+                    <a href="/api/instances/export-csv" class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Export CSV
+                    </a>
+                    <button id="addInstanceBtn" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> Add Instance
+                    </button>
+                </div>
+            </div>
+            <div id="instances-loading" class="loading"></div>
+            <div id="instances-error" class="alert alert-danger hidden"></div>
+            <table id="instances-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>URL</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Last Connected</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="instances-list"></tbody>
+            </table>
+        </div>
+        
+        <div id="agents-view" class="view hidden">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Agents</h2>
+                    <div>
+                        <button class="button button-success" id="sync-all-agents-btn">Sync All Agents</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" id="agent-search" placeholder="Search agents...">
+                </div>
+                <div class="filter-options">
+                    <div class="filter-row">
+                        <div class="filter-item">
+                            <label for="status-filter">Status:</label>
+                            <select id="status-filter" class="form-control">
+                                <option value="">All Statuses</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="os-filter">OS Type:</label>
+                            <select id="os-filter" class="form-control">
+                                <option value="">All OS Types</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="instance-filter">Instance:</label>
+                            <select id="instance-filter" class="form-control">
+                                <option value="">All Instances</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="version-filter">Version:</label>
+                            <select id="version-filter" class="form-control">
+                                <option value="">All Versions</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <button id="apply-filters" class="button button-primary">Apply Filters</button>
+                            <button id="reset-filters" class="button">Reset Filters</button>
+                        </div>
+                    </div>
+                    <div class="advanced-filters hidden" id="advanced-filters">
+                        <h3>Advanced Search</h3>
+                        <div class="filter-row">
+                            <div class="filter-item">
+                                <label for="last-checkin-filter">Last Check-in:</label>
+                                <select id="last-checkin-filter" class="form-control">
+                                    <option value="">Any Time</option>
+                                    <option value="1">Last 24 Hours</option>
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30">Last 30 Days</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="group-filter">Group:</label>
+                                <select id="group-filter" class="form-control">
+                                    <option value="">All Groups</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="network-filter">Network Status:</label>
+                                <select id="network-filter" class="form-control">
+                                    <option value="">All</option>
+                                    <option value="Normal">Normal</option>
+                                    <option value="Isolated">Isolated</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-toggle">
+                        <button id="toggle-advanced-filters" class="button button-sm">
+                            <span id="advanced-filters-label">Show Advanced Filters</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="agents-loading" class="loading"></div>
+                <div id="agents-error" class="alert alert-danger hidden"></div>
+                <table id="agents-table">
+                    <thead>
+                        <tr>
+                            <th>Instance</th>
+                            <th>Hostname</th>
+                            <th>OS Type</th>
+                            <th>Status</th>
+                            <th>Last Check-in</th>
+                            <th>Sensor Version</th>
+                            <th>Network Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agents-list"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="licenses-view" class="view hidden">
+            <div class="card">
+                <div class="card-header">
+                    <h2>License Management</h2>
+                </div>
+                <div id="licenses-loading" class="loading"></div>
+                <div id="licenses-error" class="alert alert-danger hidden"></div>
+                
+                <div class="license-summary">
+                    <div class="stat-card">
+                        <div class="stat-label">Total License Seats</div>
+                        <div class="stat-number" id="total-licenses">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Seats Used</div>
+                        <div class="stat-number" id="used-licenses">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Seats Available</div>
+                        <div class="stat-number" id="available-licenses">0</div>
+                    </div>
+                    <div class="stat-card clickable" id="view-dropped-connections">
+                        <div class="stat-label">Dropped Connections</div>
+                        <div class="stat-number" id="dropped-connections">0</div>
+                        <div class="stat-info">(Click to view details)</div>
+                    </div>
+                </div>
+                
+                <div id="license-main-view">
+                    <h3>License Allocation by Instance</h3>
+                    <table id="license-instances-table">
+                        <thead>
+                            <tr>
+                                <th>Instance</th>
+                                <th>License Type</th>
+                                <th>Seats Used</th>
+                                <th>Total Seats</th>
+                                <th>Start Date</th>
+                                <th>Expiration Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="licenses-list"></tbody>
+                    </table>
+                    
+                    <h3>Dropped Agent Connections</h3>
+                    <div class="list-actions">
+                        <button class="button button-sm" id="view-all-dropped">View All Dropped Connections</button>
+                    </div>
+                    <table id="dropped-connections-table">
+                        <thead>
+                            <tr>
+                                <th>Instance</th>
+                                <th>Agent</th>
+                                <th>Timestamp</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dropped-connections-list"></tbody>
+                    </table>
+                </div>
+                
+                <div id="instance-detail-view" class="hidden">
+                    <div class="view-header">
+                        <h3>Instance Details: <span id="instance-detail-name"></span></h3>
+                        <button class="button button-sm" id="back-to-licenses">Back to All Licenses</button>
+                    </div>
+                    
+                    <div class="license-summary">
+                        <div class="stat-card">
+                            <div class="stat-label">License Type</div>
+                            <div class="stat-number" id="instance-license-type">Standard</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Seats Used</div>
+                            <div class="stat-number" id="instance-seats-used">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Seats</div>
+                            <div class="stat-number" id="instance-total-seats">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Expiration Date</div>
+                            <div class="stat-number" id="instance-expiration">N/A</div>
+                        </div>
+                    </div>
+                    
+                    <h3>Licensed Agents</h3>
+                    <table id="instance-agents-table">
+                        <thead>
+                            <tr>
+                                <th>Hostname</th>
+                                <th>Status</th>
+                                <th>OS Type</th>
+                                <th>Last Check-in</th>
+                                <th>Registration Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instance-agents-list"></tbody>
+                    </table>
+                    
+                    <h3>Dropped Connections</h3>
+                    <table id="instance-dropped-table">
+                        <thead>
+                            <tr>
+                                <th>Agent</th>
+                                <th>Timestamp</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instance-dropped-list"></tbody>
+                    </table>
+                </div>
+                
+                <div id="dropped-connections-view" class="hidden">
+                    <div class="view-header">
+                        <h3>All Dropped Connections</h3>
+                        <button class="button button-sm" id="back-to-licenses-from-dropped">Back to All Licenses</button>
+                    </div>
+                    
+                    <table id="all-dropped-connections-table">
+                        <thead>
+                            <tr>
+                                <th>Instance</th>
+                                <th>Agent</th>
+                                <th>OS</th>
+                                <th>Timestamp</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-dropped-connections-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Instance Modal -->
+    <div id="add-instance-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Carbon Black Instance</h2>
+            <form id="add-instance-form">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" class="form-control" id="description">
+                </div>
+                <div class="form-group">
+                    <label for="url">URL</label>
+                    <input type="url" class="form-control" id="url" required placeholder="https://cb-server.example.com">
+                </div>
+                <div class="form-group">
+                    <label for="api_token">API Token</label>
+                    <input type="text" class="form-control" id="api_token" required>
+                </div>
+                <div class="form-group">
+                    <label for="server_type">Server Type</label>
+                    <select class="form-control" id="server_type" required>
+                        <option value="response">Carbon Black EDR (Response)</option>
+                        <option value="protection">Carbon Black App Control (Protection)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="ssl_verify" checked>
+                        Verify SSL Certificate
+                    </label>
+                </div>
+                <div id="add-instance-error" class="alert alert-danger hidden"></div>
+                <div class="form-actions">
+                    <button type="button" class="button button-danger" id="cancel-add-instance">Cancel</button>
+                    <button type="submit" class="button button-success">Add Instance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit Instance Modal -->
+    <div id="edit-instance-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Carbon Black Instance</h2>
+            <form id="edit-instance-form">
+                <input type="hidden" id="edit-instance-id">
+                <div class="form-group">
+                    <label for="edit-name">Name</label>
+                    <input type="text" class="form-control" id="edit-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-description">Description</label>
+                    <input type="text" class="form-control" id="edit-description">
+                </div>
+                <div class="form-group">
+                    <label for="edit-url">URL</label>
+                    <input type="url" class="form-control" id="edit-url" required placeholder="https://cb-server.example.com">
+                </div>
+                <div class="form-group">
+                    <label for="edit-api-token">API Token</label>
+                    <input type="text" class="form-control" id="edit-api-token" placeholder="Leave empty to keep current token">
+                </div>
+                <div class="form-group">
+                    <label for="edit-server-type">Server Type</label>
+                    <select class="form-control" id="edit-server-type" required>
+                        <option value="response">Carbon Black EDR (Response)</option>
+                        <option value="protection">Carbon Black App Control (Protection)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="edit-ssl-verify">
+                        Verify SSL Certificate
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="edit-is-active" checked>
+                        Active
+                    </label>
+                </div>
+                <div id="edit-instance-error" class="alert alert-danger hidden"></div>
+                <div class="form-actions">
+                    <button type="button" class="button button-danger" id="cancel-edit-instance">Cancel</button>
+                    <button type="submit" class="button button-success">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Agent Detail Modal -->
+    <div id="agent-detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Agent Details</h2>
+            <div id="agent-detail-loading" class="loading"></div>
+            <div id="agent-detail-error" class="alert alert-danger hidden"></div>
+            <div id="agent-detail-content">
+                <div class="agent-info-section">
+                    <h3>Basic Information</h3>
+                    <table class="detail-table">
+                        <tr>
+                            <th>Hostname:</th>
+                            <td id="agent-hostname"></td>
+                        </tr>
+                        <tr>
+                            <th>Instance:</th>
+                            <td id="agent-instance"></td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td id="agent-status"></td>
+                        </tr>
+                        <tr>
+                            <th>OS:</th>
+                            <td id="agent-os"></td>
+                        </tr>
+                        <tr>
+                            <th>Sensor Version:</th>
+                            <td id="agent-version"></td>
+                        </tr>
+                        <tr>
+                            <th>Last Check-in:</th>
+                            <td id="agent-last-checkin"></td>
+                        </tr>
+                        <tr>
+                            <th>Network Status:</th>
+                            <td id="agent-network"></td>
+                        </tr>
+                        <tr>
+                            <th>Group:</th>
+                            <td id="agent-group"></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="agent-actions-section">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button class="button" id="sync-agent-btn">Sync Agent</button>
+                        <button class="button button-danger" id="isolate-agent-btn">Isolate Agent</button>
+                        <button class="button button-success" id="unisolate-agent-btn">Restore Network</button>
+                        <button class="button" id="live-response-btn">Live Response</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSV Import Modal -->
+    <div id="csvImportModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Import Instances from CSV</h2>
+            <form id="csvImportForm">
+                <div class="form-group">
+                    <label for="csvFile">CSV File</label>
+                    <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                </div>
+                <div class="form-group">
+                    <p class="text-secondary small">
+                        The CSV file should have the following columns:
+                        <code>name, api_base_url, api_token, server_type</code>
+                    </p>
+                    <p class="text-secondary small">
+                        Optional columns: <code>id, is_active</code>
+                    </p>
+                </div>
+                <div id="csv-import-error" class="alert alert-danger hidden"></div>
+                <div class="form-actions">
+                    <button type="button" class="button button-danger" id="cancel-csv-import">Cancel</button>
+                    <button type="button" id="importCsvSubmit" class="button button-success">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API base URL
+        const API_BASE_URL = '/api';
+        
+        // DOM Elements
+        const instancesView = document.getElementById('instances-view');
+        const agentsView = document.getElementById('agents-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        const instancesList = document.getElementById('instances-list');
+        const instancesLoading = document.getElementById('instances-loading');
+        const instancesError = document.getElementById('instances-error');
+        
+        const agentsList = document.getElementById('agents-list');
+        const agentsLoading = document.getElementById('agents-loading');
+        const agentsError = document.getElementById('agents-error');
+        
+        const addInstanceBtn = document.getElementById('add-instance-btn');
+        const addInstanceModal = document.getElementById('add-instance-modal');
+        const addInstanceForm = document.getElementById('add-instance-form');
+        const cancelAddInstanceBtn = document.getElementById('cancel-add-instance');
+        const addInstanceError = document.getElementById('add-instance-error');
+        
+        // Edit Instance Elements
+        const editInstanceModal = document.getElementById('edit-instance-modal');
+        const editInstanceForm = document.getElementById('edit-instance-form');
+        const cancelEditInstanceBtn = document.getElementById('cancel-edit-instance');
+        const editInstanceError = document.getElementById('edit-instance-error');
+        
+        // Agent Detail Elements
+        const agentDetailModal = document.getElementById('agent-detail-modal');
+        const agentDetailLoading = document.getElementById('agent-detail-loading');
+        const agentDetailError = document.getElementById('agent-detail-error');
+        const syncAgentBtn = document.getElementById('sync-agent-btn');
+        const isolateAgentBtn = document.getElementById('isolate-agent-btn');
+        const unisolateAgentBtn = document.getElementById('unisolate-agent-btn');
+        const liveResponseBtn = document.getElementById('live-response-btn');
+        
+        // Dashboard Elements
+        const dashboardLoading = document.getElementById('dashboard-loading');
+        const dashboardError = document.getElementById('dashboard-error');
+        const totalInstancesEl = document.getElementById('total-instances');
+        const totalAgentsEl = document.getElementById('total-agents');
+        const onlineAgentsEl = document.getElementById('online-agents');
+        const offlineAgentsEl = document.getElementById('offline-agents');
+        const activityList = document.getElementById('activity-list');
+        
+        const syncAllAgentsBtn = document.getElementById('sync-all-agents-btn');
+        const agentSearch = document.getElementById('agent-search');
+        
+        // Filter elements
+        const statusFilter = document.getElementById('status-filter');
+        const osFilter = document.getElementById('os-filter');
+        const instanceFilter = document.getElementById('instance-filter');
+        const versionFilter = document.getElementById('version-filter');
+        const applyFiltersBtn = document.getElementById('apply-filters');
+        const resetFiltersBtn = document.getElementById('reset-filters');
+        
+        // Advanced Filter Elements
+        const toggleAdvancedFiltersBtn = document.getElementById('toggle-advanced-filters');
+        const advancedFiltersLabel = document.getElementById('advanced-filters-label');
+        const advancedFilters = document.getElementById('advanced-filters');
+        const lastCheckinFilter = document.getElementById('last-checkin-filter');
+        const groupFilter = document.getElementById('group-filter');
+        const networkFilter = document.getElementById('network-filter');
+        
+        // Helper Functions
+        function showLoading(element) {
+            element.style.display = 'block';
+        }
+        
+        function hideLoading(element) {
+            element.style.display = 'none';
+        }
+        
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+        }
+        
+        function hideError(element) {
+            element.classList.add('hidden');
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Never';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+        
+        function getStatusClass(status) {
+            status = status.toLowerCase();
+            if (status === 'connected') return 'status-connected';
+            if (status === 'unknown') return 'status-unknown';
+            return 'status-error';
+        }
+        
+        // Navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const view = link.getAttribute('data-view');
+                
+                // Hide all views
+                document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+                
+                // Show selected view
+                document.getElementById(`${view}-view`).classList.remove('hidden');
+                
+                // Update active link
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Load data for the view
+                if (view === 'instances') {
+                    loadInstances();
+                } else if (view === 'agents') {
+                    loadAgents();
+                } else if (view === 'licenses') {
+                    loadLicenses();
+                }
+            });
+        });
+        
+        // Load Instances
+        function loadInstances() {
+            showLoading(instancesLoading);
+            hideError(instancesError);
+            
+            fetch(`${API_BASE_URL}/instances`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load instances');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderInstances(data.data);
+                    hideLoading(instancesLoading);
+                })
+                .catch(error => {
+                    console.error('Error loading instances:', error);
+                    showError(instancesError, error.message);
+                    hideLoading(instancesLoading);
+                });
+        }
+        
+        // Render Instances
+        function renderInstances(instances) {
+            instancesList.innerHTML = '';
+            
+            if (instances.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="6" style="text-align: center;">No instances found. Add a new instance to get started.</td>`;
+                instancesList.appendChild(row);
+                return;
+            }
+            
+            instances.forEach(instance => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${instance.name}</td>
+                    <td>${instance.url}</td>
+                    <td>${instance.server_type === 'response' ? 'EDR (Response)' : 'App Control (Protection)'}</td>
+                    <td><span class="status-badge ${getStatusClass(instance.connection_status)}">${instance.connection_status}</span></td>
+                    <td>${formatDate(instance.last_checked)}</td>
+                    <td>
+                        <button class="button button-sm" data-action="test" data-id="${instance.id}">Test</button>
+                        <button class="button button-sm" data-action="sync" data-id="${instance.id}">Sync</button>
+                        <button class="button button-sm" data-action="edit" data-id="${instance.id}">Edit</button>
+                        <button class="button button-sm button-danger" data-action="delete" data-id="${instance.id}">Delete</button>
+                    </td>
+                `;
+                instancesList.appendChild(row);
+            });
+            
+            // Add event listeners to action buttons
+            instancesList.querySelectorAll('button[data-action]').forEach(button => {
+                button.addEventListener('click', handleInstanceAction);
+            });
+        }
+        
+        // Handle Instance Actions
+        function handleInstanceAction(e) {
+            const action = e.target.getAttribute('data-action');
+            const instanceId = e.target.getAttribute('data-id');
+            
+            if (action === 'test') {
+                testConnection(instanceId);
+            } else if (action === 'sync') {
+                syncAgents(instanceId);
+            } else if (action === 'edit') {
+                openEditInstanceModal(instanceId);
+            } else if (action === 'delete') {
+                if (confirm('Are you sure you want to delete this instance?')) {
+                    deleteInstance(instanceId);
+                }
+            }
+        }
+        
+        // Open Edit Instance Modal
+        function openEditInstanceModal(instanceId) {
+            showLoading(instancesLoading);
+            hideError(instancesError);
+            
+            fetch(`${API_BASE_URL}/instances/${instanceId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load instance details');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading(instancesLoading);
+                    
+                    if (data.status === 'success') {
+                        const instance = data.data;
+                        
+                        // Set form values
+                        document.getElementById('edit-instance-id').value = instance.id;
+                        document.getElementById('edit-name').value = instance.name;
+                        document.getElementById('edit-description').value = instance.description || '';
+                        document.getElementById('edit-url').value = instance.url || instance.api_base_url;
+                        document.getElementById('edit-server-type').value = instance.server_type || 'response';
+                        document.getElementById('edit-ssl-verify').checked = instance.ssl_verify !== false;
+                        document.getElementById('edit-is-active').checked = instance.is_active !== false;
+                        
+                        // Clear API token (as a security measure)
+                        document.getElementById('edit-api-token').value = '';
+                        
+                        // Show modal
+                        editInstanceModal.style.display = 'block';
+                    } else {
+                        alert('Failed to load instance details');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading instance details:', error);
+                    showError(instancesError, error.message);
+                    hideLoading(instancesLoading);
+                });
+        }
+        
+        // Close Edit Modal
+        editInstanceModal.querySelector('.close').addEventListener('click', () => {
+            editInstanceModal.style.display = 'none';
+        });
+        
+        // Cancel Edit Instance
+        cancelEditInstanceBtn.addEventListener('click', () => {
+            editInstanceModal.style.display = 'none';
+        });
+        
+        // Edit Instance Form Submit
+        editInstanceForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const instanceId = document.getElementById('edit-instance-id').value;
+            const instance = {
+                name: document.getElementById('edit-name').value,
+                url: document.getElementById('edit-url').value,
+                is_active: document.getElementById('edit-is-active').checked,
+                server_type: document.getElementById('edit-server-type').value,
+                ssl_verify: document.getElementById('edit-ssl-verify').checked
+            };
+            
+            // Only include API token if provided
+            const apiToken = document.getElementById('edit-api-token').value;
+            if (apiToken) {
+                instance.api_token = apiToken;
+            }
+            
+            hideError(editInstanceError);
+            
+            fetch(`${API_BASE_URL}/instances/${instanceId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(instance)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        editInstanceModal.style.display = 'none';
+                        loadInstances();
+                    } else {
+                        showError(editInstanceError, data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating instance:', error);
+                    showError(editInstanceError, error.message);
+                });
+        });
+        
+        // Load Agents
+        function loadAgents(filters = {}) {
+            showLoading(agentsLoading);
+            hideError(agentsError);
+            
+            // Check if we need to make a filtered request
+            let url = `${API_BASE_URL}/agents`;
+            let method = 'GET';
+            let body = null;
+            
+            if (Object.keys(filters).length > 0 || 
+                (agentSearch.value && agentSearch.value.trim() !== '')) {
+                
+                url = `${API_BASE_URL}/agents/search`;
+                method = 'POST';
+                body = JSON.stringify({
+                    search: agentSearch.value.trim(),
+                    filters: filters
+                });
+            }
+            
+            fetch(url, {
+                method: method,
+                headers: method === 'POST' ? {
+                    'Content-Type': 'application/json'
+                } : {},
+                body: body
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        renderAgents(data.data);
+                        
+                        // If we have filter options in the response, populate the dropdowns
+                        if (data.filter_options) {
+                            populateFilterOptions(data.filter_options);
+                        }
+                        
+                        hideLoading(agentsLoading);
+                    } else {
+                        throw new Error(data.message || 'Failed to load agents');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading agents:', error);
+                    showError(agentsError, error.message);
+                    hideLoading(agentsLoading);
+                });
+        }
+        
+        // Populate filter dropdowns with options from API
+        function populateFilterOptions(options) {
+            // Clear existing options (keep the first "All" option)
+            statusFilter.innerHTML = '<option value="">All Statuses</option>';
+            osFilter.innerHTML = '<option value="">All OS Types</option>';
+            instanceFilter.innerHTML = '<option value="">All Instances</option>';
+            versionFilter.innerHTML = '<option value="">All Versions</option>';
+            
+            // Populate status options
+            options.statuses.forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = status;
+                statusFilter.appendChild(option);
+            });
+            
+            // Populate OS type options
+            options.os_types.forEach(osType => {
+                const option = document.createElement('option');
+                option.value = osType;
+                option.textContent = osType;
+                osFilter.appendChild(option);
+            });
+            
+            // Populate instance options
+            options.instances.forEach(instance => {
+                const option = document.createElement('option');
+                option.value = instance.id;
+                option.textContent = instance.name;
+                instanceFilter.appendChild(option);
+            });
+            
+            // Populate version options
+            options.versions.forEach(version => {
+                const option = document.createElement('option');
+                option.value = version;
+                option.textContent = version;
+                versionFilter.appendChild(option);
+            });
+        }
+        
+        // Render Agents in the table
+        function renderAgents(agents) {
+            agentsList.innerHTML = '';
+            
+            if (agents.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="7" style="text-align: center;">No agents found.</td>`;
+                agentsList.appendChild(row);
+                return;
+            }
+            
+            agents.forEach(agent => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-agent-id', agent.id);
+                row.setAttribute('data-instance-id', agent.instance_id);
+                
+                // Get status class for status badge
+                const statusClass = agent.status ? 
+                    (agent.status.toLowerCase() === 'online' ? 'status-connected' : 
+                    (agent.status.toLowerCase() === 'offline' ? 'status-error' : 'status-unknown')) : 'status-unknown';
+                
+                row.innerHTML = `
+                    <td>${agent.instance_name || 'Unknown'}</td>
+                    <td>${agent.hostname || agent.computer_name || 'Unknown'}</td>
+                    <td>${agent.os_type || 'Unknown'}</td>
+                    <td><span class="status-badge ${statusClass}">${agent.status || 'Unknown'}</span></td>
+                    <td>${formatDate(agent.last_check_in)}</td>
+                    <td>${agent.sensor_version || 'Unknown'}</td>
+                    <td>${agent.network_status || 'Unknown'}</td>
+                `;
+                
+                row.addEventListener('click', () => {
+                    showAgentDetails(agent.id);
+                });
+                
+                agentsList.appendChild(row);
+            });
+        }
+        
+        // Show agent details modal
+        function showAgentDetails(agentId) {
+            showLoading(agentDetailLoading);
+            hideError(agentDetailError);
+            
+            fetch(`${API_BASE_URL}/agents/${agentId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        const agent = data.data;
+                        
+                        // Populate agent details
+                        document.getElementById('agent-hostname').textContent = agent.hostname || agent.computer_name || 'Unknown';
+                        document.getElementById('agent-instance').textContent = agent.instance_name || 'Unknown';
+                        document.getElementById('agent-status').textContent = agent.status || 'Unknown';
+                        document.getElementById('agent-os').textContent = agent.os_type || 'Unknown';
+                        document.getElementById('agent-version').textContent = agent.sensor_version || 'Unknown';
+                        document.getElementById('agent-last-checkin').textContent = formatDate(agent.last_check_in);
+                        document.getElementById('agent-network').textContent = agent.network_status || 'Unknown';
+                        document.getElementById('agent-group').textContent = agent.group_name || 'None';
+                        
+                        // Setup action buttons
+                        syncAgentBtn.setAttribute('data-agent-id', agent.id);
+                        syncAgentBtn.setAttribute('data-instance-id', agent.instance_id);
+                        
+                        isolateAgentBtn.setAttribute('data-agent-id', agent.id);
+                        isolateAgentBtn.setAttribute('data-instance-id', agent.instance_id);
+                        
+                        unisolateAgentBtn.setAttribute('data-agent-id', agent.id);
+                        unisolateAgentBtn.setAttribute('data-instance-id', agent.instance_id);
+                        
+                        liveResponseBtn.setAttribute('data-agent-id', agent.id);
+                        liveResponseBtn.setAttribute('data-instance-id', agent.instance_id);
+                        
+                        // Show/hide isolation buttons based on network status
+                        if (agent.network_status && agent.network_status.toLowerCase() === 'isolated') {
+                            isolateAgentBtn.style.display = 'none';
+                            unisolateAgentBtn.style.display = 'inline-block';
+                        } else {
+                            isolateAgentBtn.style.display = 'inline-block';
+                            unisolateAgentBtn.style.display = 'none';
+                        }
+                        
+                        hideLoading(agentDetailLoading);
+                        agentDetailModal.style.display = 'block';
+                    } else {
+                        throw new Error(data.message || 'Failed to load agent details');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading agent details:', error);
+                    showError(agentDetailError, error.message);
+                    hideLoading(agentDetailLoading);
+                });
+        }
+        
+        // Close agent detail modal
+        agentDetailModal.querySelector('.close').addEventListener('click', () => {
+            agentDetailModal.style.display = 'none';
+        });
+        
+        // Sync single agent
+        syncAgentBtn.addEventListener('click', () => {
+            const agentId = syncAgentBtn.getAttribute('data-agent-id');
+            const instanceId = syncAgentBtn.getAttribute('data-instance-id');
+            
+            showLoading(agentDetailLoading);
+            hideError(agentDetailError);
+            
+            fetch(`${API_BASE_URL}/sync/agent/${agentId}?instance_id=${instanceId}`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading(agentDetailLoading);
+                    if (data.status === 'success') {
+                        alert('Agent synced successfully!');
+                        agentDetailModal.style.display = 'none';
+                        loadAgents();
+                    } else {
+                        showError(agentDetailError, data.message || 'Failed to sync agent');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error syncing agent:', error);
+                    showError(agentDetailError, error.message);
+                    hideLoading(agentDetailLoading);
+                });
+        });
+        
+        // Sync All Agents
+        syncAllAgentsBtn.addEventListener('click', () => {
+            showLoading(agentsLoading);
+            hideError(agentsError);
+            
+            fetch(`${API_BASE_URL}/agents/sync-all`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading(agentsLoading);
+                    if (data.status === 'success') {
+                        alert(`Synced ${data.total_count} agents from ${data.results.length} instances!`);
+                        loadAgents();
+                    } else {
+                        alert('Failed to sync agents');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error syncing all agents:', error);
+                    showError(agentsError, error.message);
+                    hideLoading(agentsLoading);
+                });
+        });
+        
+        // Search Agents
+        agentSearch.addEventListener('input', debounce(searchAgents, 500));
+        
+        function searchAgents() {
+            const searchTerm = agentSearch.value.trim();
+            if (!searchTerm) {
+                loadAgents();
+                return;
+            }
+            
+            showLoading(agentsLoading);
+            hideError(agentsError);
+            
+            fetch(`${API_BASE_URL}/agents/search`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    search: searchTerm
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    renderAgents(data.data);
+                    populateFilterOptions(data.filter_options);
+                    hideLoading(agentsLoading);
+                })
+                .catch(error => {
+                    console.error('Error searching agents:', error);
+                    showError(agentsError, error.message);
+                    hideLoading(agentsLoading);
+                });
+        }
+        
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
+        
+        // Initial load
+        loadInstances();
+        
+        // Filter event handlers
+        applyFiltersBtn.addEventListener('click', applyFilters);
+        resetFiltersBtn.addEventListener('click', resetFilters);
+        
+        function applyFilters() {
+            const filters = {
+                status: statusFilter.value,
+                os: osFilter.value,
+                instance_id: instanceFilter.value,
+                version: versionFilter.value
+            };
+            
+            // Only include non-empty filter values
+            Object.keys(filters).forEach(key => {
+                if (!filters[key]) delete filters[key];
+            });
+            
+            loadAgents(filters);
+        }
+        
+        function resetFilters() {
+            statusFilter.value = '';
+            osFilter.value = '';
+            instanceFilter.value = '';
+            versionFilter.value = '';
+            agentSearch.value = '';
+            
+            loadAgents();
+        }
+        
+        // Toggle advanced filters
+        toggleAdvancedFiltersBtn.addEventListener('click', () => {
+            advancedFilters.classList.toggle('hidden');
+            if (advancedFilters.classList.contains('hidden')) {
+                advancedFiltersLabel.textContent = 'Show Advanced Filters';
+            } else {
+                advancedFiltersLabel.textContent = 'Hide Advanced Filters';
+            }
+        });
+        
+        // License Management
+        function loadLicenses() {
+            const licensesLoading = document.getElementById('licenses-loading');
+            const licensesError = document.getElementById('licenses-error');
+            const licensesList = document.getElementById('licenses-list');
+            const droppedConnectionsList = document.getElementById('dropped-connections-list');
+            
+            // Show main view, hide detail views
+            document.getElementById('license-main-view').classList.remove('hidden');
+            document.getElementById('instance-detail-view').classList.add('hidden');
+            document.getElementById('dropped-connections-view').classList.add('hidden');
+            
+            showLoading(licensesLoading);
+            hideError(licensesError);
+            
+            fetch(`${API_BASE_URL}/licenses`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load license information');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Store license data globally for access in drill-down views
+                        window.licenseData = data;
+                        
+                        // Update summary statistics
+                        document.getElementById('total-licenses').textContent = data.total_seats || 0;
+                        document.getElementById('used-licenses').textContent = data.used_seats || 0;
+                        document.getElementById('available-licenses').textContent = data.available_seats || 0;
+                        document.getElementById('dropped-connections').textContent = data.dropped_connections_count || 0;
+                        
+                        // Render license instances
+                        renderLicenseInstances(data.instances);
+                        
+                        // Render dropped connections
+                        renderDroppedConnections(data.dropped_connections);
+                        
+                        hideLoading(licensesLoading);
+                    } else {
+                        throw new Error(data.message || 'Failed to load license information');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading license information:', error);
+                    showError(licensesError, error.message);
+                    hideLoading(licensesLoading);
+                });
+        }
+        
+        function renderLicenseInstances(instances) {
+            const licensesList = document.getElementById('licenses-list');
+            licensesList.innerHTML = '';
+            
+            if (!instances || instances.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="8" style="text-align: center;">No license information available</td>`;
+                licensesList.appendChild(row);
+                return;
+            }
+            
+            instances.forEach(instance => {
+                const row = document.createElement('tr');
+                
+                // Calculate license status
+                const now = new Date();
+                const expirationDate = new Date(instance.expiration_date);
+                let statusClass = 'status-connected';
+                let statusText = 'Active';
+                
+                if (expirationDate < now) {
+                    statusClass = 'status-error';
+                    statusText = 'Expired';
+                } else if (instance.seats_used >= instance.total_seats) {
+                    statusClass = 'status-error';
+                    statusText = 'Fully Consumed';
+                } else if (instance.seats_used / instance.total_seats > 0.9) {
+                    statusClass = 'status-unknown';
+                    statusText = 'Near Capacity';
+                }
+                
+                row.innerHTML = `
+                    <td>${instance.name}</td>
+                    <td>${instance.license_type || 'Standard'}</td>
+                    <td>${instance.seats_used}</td>
+                    <td>${instance.total_seats}</td>
+                    <td>${formatDate(instance.start_date)}</td>
+                    <td>${formatDate(instance.expiration_date)}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="button button-sm view-instance-details" data-instance-id="${instance.id}">View Details</button>
+                    </td>
+                `;
+                
+                licensesList.appendChild(row);
+            });
+            
+            // Add event listeners to detail buttons
+            document.querySelectorAll('.view-instance-details').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const instanceId = e.target.getAttribute('data-instance-id');
+                    viewInstanceDetails(instanceId);
+                });
+            });
+        }
+        
+        function renderDroppedConnections(connections) {
+            const droppedConnectionsList = document.getElementById('dropped-connections-list');
+            droppedConnectionsList.innerHTML = '';
+            
+            if (!connections || connections.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="4" style="text-align: center;">No dropped connections</td>`;
+                droppedConnectionsList.appendChild(row);
+                return;
+            }
+            
+            // Only show first 5 connections in the main view
+            const displayConnections = connections.slice(0, 5);
+            
+            displayConnections.forEach(connection => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${connection.instance_name}</td>
+                    <td>${connection.agent_hostname || connection.agent_id}</td>
+                    <td>${formatDate(connection.timestamp)}</td>
+                    <td>${connection.reason || 'License limit reached'}</td>
+                `;
+                
+                droppedConnectionsList.appendChild(row);
+            });
+            
+            // Add a "Show more" row if there are more connections
+            if (connections.length > 5) {
+                const moreRow = document.createElement('tr');
+                moreRow.innerHTML = `
+                    <td colspan="4" style="text-align: center;">
+                        <em>Showing 5 of ${connections.length} dropped connections. Click "View All" for complete list.</em>
+                    </td>
+                `;
+                droppedConnectionsList.appendChild(moreRow);
+            }
+        }
+        
+        function viewInstanceDetails(instanceId) {
+            const licensesLoading = document.getElementById('licenses-loading');
+            const licensesError = document.getElementById('licenses-error');
+            
+            showLoading(licensesLoading);
+            hideError(licensesError);
+            
+            fetch(`${API_BASE_URL}/licenses/instance/${instanceId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load instance details');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Hide main view, show instance detail view
+                        document.getElementById('license-main-view').classList.add('hidden');
+                        document.getElementById('instance-detail-view').classList.remove('hidden');
+                        document.getElementById('dropped-connections-view').classList.add('hidden');
+                        
+                        // Set instance name
+                        document.getElementById('instance-detail-name').textContent = data.instance.name;
+                        
+                        // Set license summary info
+                        document.getElementById('instance-license-type').textContent = data.license.edr_license_type || 
+                                                                                      data.license.type || 'Standard';
+                        document.getElementById('instance-seats-used').textContent = data.license.sensors_active || 
+                                                                                    data.license.agentsUsed || 0;
+                        document.getElementById('instance-total-seats').textContent = data.license.sensors_maximum || 
+                                                                                     data.license.maxAgents || 0;
+                        document.getElementById('instance-expiration').textContent = formatDate(data.license.license_valid_to || 
+                                                                                               data.license.expirationDate);
+                        
+                        // Render agent list
+                        const agentsList = document.getElementById('instance-agents-list');
+                        agentsList.innerHTML = '';
+                        
+                        if (!data.agents || data.agents.length === 0) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `<td colspan="5" style="text-align: center;">No agents found</td>`;
+                            agentsList.appendChild(row);
+                        } else {
+                            data.agents.forEach(agent => {
+                                const row = document.createElement('tr');
+                                
+                                const statusClass = agent.status && agent.status.toLowerCase() === 'online' ? 
+                                                   'status-connected' : 
+                                                   (agent.status && agent.status.toLowerCase() === 'offline' ? 
+                                                   'status-error' : 'status-unknown');
+                                
+                                row.innerHTML = `
+                                    <td>${agent.hostname || agent.computer_name || 'Unknown'}</td>
+                                    <td><span class="status-badge ${statusClass}">${agent.status || 'Unknown'}</span></td>
+                                    <td>${agent.os_type || 'Unknown'}</td>
+                                    <td>${formatDate(agent.last_checkin)}</td>
+                                    <td>${formatDate(agent.registration_time)}</td>
+                                `;
+                                agentsList.appendChild(row);
+                            });
+                        }
+                        
+                        // Render dropped connections for this instance
+                        const droppedList = document.getElementById('instance-dropped-list');
+                        droppedList.innerHTML = '';
+                        
+                        if (!data.dropped_connections || data.dropped_connections.length === 0) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `<td colspan="3" style="text-align: center;">No dropped connections</td>`;
+                            droppedList.appendChild(row);
+                        } else {
+                            data.dropped_connections.forEach(connection => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${connection.agent_hostname || connection.agent_id}</td>
+                                    <td>${formatDate(connection.timestamp)}</td>
+                                    <td>${connection.reason || 'License limit reached'}</td>
+                                `;
+                                droppedList.appendChild(row);
+                            });
+                        }
+                        
+                        hideLoading(licensesLoading);
+                    } else {
+                        throw new Error(data.message || 'Failed to load instance details');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading instance details:', error);
+                    showError(licensesError, error.message);
+                    hideLoading(licensesLoading);
+                });
+        }
+        
+        function viewAllDroppedConnections() {
+            const licensesLoading = document.getElementById('licenses-loading');
+            const licensesError = document.getElementById('licenses-error');
+            
+            showLoading(licensesLoading);
+            hideError(licensesError);
+            
+            fetch(`${API_BASE_URL}/licenses/dropped`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load dropped connections');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Hide main view, show dropped connections view
+                        document.getElementById('license-main-view').classList.add('hidden');
+                        document.getElementById('instance-detail-view').classList.add('hidden');
+                        document.getElementById('dropped-connections-view').classList.remove('hidden');
+                        
+                        // Render all dropped connections
+                        const allDroppedList = document.getElementById('all-dropped-connections-list');
+                        allDroppedList.innerHTML = '';
+                        
+                        if (!data.dropped_connections || data.dropped_connections.length === 0) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `<td colspan="5" style="text-align: center;">No dropped connections</td>`;
+                            allDroppedList.appendChild(row);
+                        } else {
+                            data.dropped_connections.forEach(connection => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${connection.instance_name}</td>
+                                    <td>${connection.agent_hostname || connection.agent_id}</td>
+                                    <td>${connection.agent_info?.os_type || 'Unknown'}</td>
+                                    <td>${formatDate(connection.timestamp)}</td>
+                                    <td>${connection.reason || 'License limit reached'}</td>
+                                `;
+                                allDroppedList.appendChild(row);
+                            });
+                        }
+                        
+                        hideLoading(licensesLoading);
+                    } else {
+                        throw new Error(data.message || 'Failed to load dropped connections');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading dropped connections:', error);
+                    showError(licensesError, error.message);
+                    hideLoading(licensesLoading);
+                });
+        }
+        
+        // Add event listeners for license management
+        document.addEventListener('DOMContentLoaded', function() {
+            // Back buttons
+            const backToLicensesBtn = document.getElementById('back-to-licenses');
+            if (backToLicensesBtn) {
+                backToLicensesBtn.addEventListener('click', loadLicenses);
+            }
+            
+            const backToLicensesFromDroppedBtn = document.getElementById('back-to-licenses-from-dropped');
+            if (backToLicensesFromDroppedBtn) {
+                backToLicensesFromDroppedBtn.addEventListener('click', loadLicenses);
+            }
+            
+            // View all dropped connections
+            const viewAllDroppedBtn = document.getElementById('view-all-dropped');
+            if (viewAllDroppedBtn) {
+                viewAllDroppedBtn.addEventListener('click', viewAllDroppedConnections);
+            }
+            
+            // View dropped connections from stat card
+            const viewDroppedConnectionsCard = document.getElementById('view-dropped-connections');
+            if (viewDroppedConnectionsCard) {
+                viewDroppedConnectionsCard.addEventListener('click', viewAllDroppedConnections);
+            }
+        });
+        
+        // Test Connection
+        function testConnection(instanceId) {
+            showLoading(instancesLoading);
+            hideError(instancesError);
+            
+            fetch(`${API_BASE_URL}/instances/${instanceId}/test-connection`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading(instancesLoading);
+                    if (data.status === 'success') {
+                        alert('Connection test successful!');
+                    } else {
+                        alert(`Connection test failed: ${data.message}`);
+                    }
+                    loadInstances();
+                })
+                .catch(error => {
+                    console.error('Error testing connection:', error);
+                    showError(instancesError, error.message);
+                    hideLoading(instancesLoading);
+                });
+        }
+        
+        // Sync Agents
+        function syncAgents(instanceId) {
+            showLoading(instancesLoading);
+            hideError(instancesError);
+            
+            fetch(`${API_BASE_URL}/instances/${instanceId}/sync`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading(instancesLoading);
+                    if (data.status === 'success') {
+                        alert(`Synced ${data.count} agents successfully!`);
+                    } else {
+                        alert(`Failed to sync agents: ${data.message}`);
+                    }
+                    loadInstances();
+                })
+                .catch(error => {
+                    console.error('Error syncing agents:', error);
+                    showError(instancesError, error.message);
+                    hideLoading(instancesLoading);
+                });
+        }
+        
+        // Delete Instance
+        function deleteInstance(instanceId) {
+            showLoading(instancesLoading);
+            hideError(instancesError);
+            
+            fetch(`${API_BASE_URL}/instances/${instanceId}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to delete instance');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading(instancesLoading);
+                    loadInstances();
+                })
+                .catch(error => {
+                    console.error('Error deleting instance:', error);
+                    showError(instancesError, error.message);
+                    hideLoading(instancesLoading);
+                });
+        }
+        
+        // Function to show toast/notification
+        function showToast(type, message) {
+            // Create a floating alert/toast for notifications
+            const alertClass = type === 'success' ? 'alert-success' : 
+                              type === 'error' ? 'alert-danger' : 
+                              type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            const toast = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add to body and set timeout to remove
+            const toastElement = $(toast).appendTo('body');
+            setTimeout(() => {
+                toastElement.alert('close');
+            }, 5000);
+        }
+        
+        // Add Instance Modal
+        $(document).ready(function() {
+            // Initialize the instance modal
+            $("#addInstanceBtn").on("click", function() {
+                $("#add-instance-form")[0].reset();
+                $("#add-instance-error").hide();
+                document.getElementById("add-instance-modal").style.display = "block";
+            });
+            
+            // Close the add instance modal
+            $("#add-instance-modal .close, #cancel-add-instance").on("click", function() {
+                document.getElementById("add-instance-modal").style.display = "none";
+            });
+            
+            // Add instance form submission
+            $("#add-instance-form").on("submit", function(e) {
+                e.preventDefault();
+                
+                const instance = {
+                    name: $("#name").val(),
+                    api_base_url: $("#url").val(),
+                    api_token: $("#api_token").val(),
+                    server_type: $("#server_type").val(),
+                    ssl_verify: $("#ssl_verify").is(":checked")
+                };
+                
+                $.ajax({
+                    url: "/api/instances/",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(instance),
+                    beforeSend: function() {
+                        $("#add-instance-form button[type='submit']").prop("disabled", true);
+                        $("#add-instance-form button[type='submit']").html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...');
+                        $("#add-instance-error").hide();
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            document.getElementById("add-instance-modal").style.display = "none";
+                            showToast("success", "Instance added successfully");
+                            loadInstances();
+                        } else {
+                            $("#add-instance-error").text(response.message || "Error adding instance").show();
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = "Error adding instance";
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            errorMessage = response.message || errorMessage;
+                        } catch (e) {}
+                        $("#add-instance-error").text(errorMessage).show();
+                    },
+                    complete: function() {
+                        $("#add-instance-form button[type='submit']").prop("disabled", false);
+                        $("#add-instance-form button[type='submit']").html('Add Instance');
+                    }
+                });
+            });
+        });
+
+        // Add event listeners for CSV import
+        $("#importCsvBtn").on("click", function() {
+            $("#csvImportForm")[0].reset();
+            $("#csv-import-error").hide();
+            document.getElementById("csvImportModal").style.display = "block";
+        });
+        
+        // Close CSV import modal
+        $("#csvImportModal .close, #cancel-csv-import").on("click", function() {
+            document.getElementById("csvImportModal").style.display = "none";
+        });
+
+        $("#importCsvSubmit").on("click", function() {
+            const fileInput = $("#csvFile")[0];
+            if (fileInput.files.length === 0) {
+                $("#csv-import-error").text("Please select a CSV file").show();
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            
+            $.ajax({
+                url: "/api/import/instances",
+                method: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                beforeSend: function() {
+                    $("#importCsvSubmit").prop("disabled", true);
+                    $("#importCsvSubmit").html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Importing...');
+                    $("#csv-import-error").hide();
+                },
+                success: function(response) {
+                    document.getElementById("csvImportModal").style.display = "none";
+                    if (response.success) {
+                        showToast("success", response.message);
+                        // Reload instances
+                        loadInstances();
+                    } else {
+                        showToast("error", response.message);
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = "Error importing CSV";
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        errorMessage = response.message || errorMessage;
+                    } catch (e) {}
+                    $("#csv-import-error").text(errorMessage).show();
+                },
+                complete: function() {
+                    $("#importCsvSubmit").prop("disabled", false);
+                    $("#importCsvSubmit").html('Import');
+                }
+            });
+        });
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

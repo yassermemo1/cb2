@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbon Black Audit Logs - Multi-Tenant Console</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: #212529;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            font-weight: bold;
+            background-color: #f1f3f5;
+        }
+        
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+        
+        .table {
+            font-size: 0.9rem;
+        }
+        
+        .table th {
+            font-weight: 600;
+            background-color: #f1f3f5;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            vertical-align: text-bottom;
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spinner-border 0.75s linear infinite;
+        }
+        
+        @keyframes spinner-border {
+            to { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            border-radius: 8px;
+        }
+        
+        .timestamp {
+            white-space: nowrap;
+        }
+        
+        .details-cell {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .details-cell.expanded {
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .audit-filters {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Carbon Black Multi-Tenant Console</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-home"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard"><i class="fas fa-chart-bar"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cbapi"><i class="fas fa-terminal"></i> API Console</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/cbaudit"><i class="fas fa-clipboard-list"></i> Audit Logs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <h1 class="mb-4">Carbon Black Audit Logs</h1>
+        
+        <!-- Instance Selection -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-server me-2"></i> Select Carbon Black Instance
+            </div>
+            <div class="card-body">
+                <select id="instanceSelect" class="form-select mb-3">
+                    <option value="">Select an instance...</option>
+                </select>
+                <div id="instanceDetails" class="d-none">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>URL:</strong> <span id="instanceUrl"></span></p>
+                            <p><strong>Server Type:</strong> <span id="instanceType"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span id="instanceStatus"></span></p>
+                            <p><strong>Sensors:</strong> <span id="instanceSensors"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="card mb-4" id="filtersCard">
+            <div class="card-header">
+                <i class="fas fa-filter me-2"></i> Audit Log Filters
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="daysFilter" class="form-label">Time Range (days)</label>
+                        <select id="daysFilter" class="form-select">
+                            <option value="1">Last 24 hours</option>
+                            <option value="7" selected>Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="usernameFilter" class="form-label">Username</label>
+                        <input type="text" id="usernameFilter" class="form-control" placeholder="Filter by username">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="eventTypeFilter" class="form-label">Event Type</label>
+                        <input type="text" id="eventTypeFilter" class="form-control" placeholder="Filter by event type">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="limitFilter" class="form-label">Limit Results</label>
+                        <select id="limitFilter" class="form-select">
+                            <option value="50">50 results</option>
+                            <option value="100" selected>100 results</option>
+                            <option value="250">250 results</option>
+                            <option value="500">500 results</option>
+                            <option value="1000">1000 results</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <button id="applyFilters" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i> Apply Filters
+                        </button>
+                        <button id="resetFilters" class="btn btn-secondary ms-2">
+                            <i class="fas fa-undo me-2"></i> Reset Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Audit Logs Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-clipboard-list me-2"></i> Audit Logs
+                </div>
+                <div>
+                    <button id="refreshLogs" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                    </button>
+                    <button id="exportLogs" class="btn btn-sm btn-outline-secondary ms-2">
+                        <i class="fas fa-download me-1"></i> Export
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="logsLoading" class="text-center my-5 d-none">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-3">Loading audit logs...</p>
+                </div>
+                <div id="logsError" class="alert alert-danger d-none" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i> 
+                    <span id="errorMessage">An error occurred while fetching audit logs.</span>
+                </div>
+                <div id="noLogs" class="alert alert-info d-none" role="alert">
+                    <i class="fas fa-info-circle me-2"></i> No audit logs found. Try adjusting your filters.
+                </div>
+                <div id="logsTable" class="table-responsive d-none">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Type</th>
+                                <th>Username</th>
+                                <th>Description</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <!-- Logs will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script>
+        $(document).ready(function() {
+            // Load instances
+            loadInstances();
+            
+            // Event listeners
+            $('#instanceSelect').on('change', function() {
+                const instanceId = $(this).val();
+                if (instanceId) {
+                    showInstanceDetails(instanceId);
+                    loadAuditLogs(instanceId);
+                } else {
+                    $('#instanceDetails').addClass('d-none');
+                    $('#filtersCard, #logsTable, #noLogs, #logsError').addClass('d-none');
+                }
+            });
+            
+            $('#applyFilters').on('click', function() {
+                const instanceId = $('#instanceSelect').val();
+                if (instanceId) {
+                    loadAuditLogs(instanceId);
+                }
+            });
+            
+            $('#resetFilters').on('click', function() {
+                $('#daysFilter').val('7');
+                $('#usernameFilter').val('');
+                $('#eventTypeFilter').val('');
+                $('#limitFilter').val('100');
+                
+                const instanceId = $('#instanceSelect').val();
+                if (instanceId) {
+                    loadAuditLogs(instanceId);
+                }
+            });
+            
+            $('#refreshLogs').on('click', function() {
+                const instanceId = $('#instanceSelect').val();
+                if (instanceId) {
+                    loadAuditLogs(instanceId);
+                }
+            });
+            
+            $('#exportLogs').on('click', function() {
+                exportToCSV();
+            });
+            
+            // On click of a details cell, toggle expansion
+            $(document).on('click', '.details-cell', function() {
+                $(this).toggleClass('expanded');
+            });
+        });
+        
+        function loadInstances() {
+            $.ajax({
+                url: '/api/instances/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        const instanceSelect = $('#instanceSelect');
+                        instanceSelect.empty();
+                        instanceSelect.append('<option value="">Select an instance...</option>');
+                        
+                        response.data.forEach(function(instance) {
+                            instanceSelect.append(`<option value="${instance.id}">${instance.name} (${instance.connection_status})</option>`);
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading instances:', error);
+                }
+            });
+        }
+        
+        function showInstanceDetails(instanceId) {
+            $.ajax({
+                url: `/api/instances/${instanceId}`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        const instance = response.data;
+                        $('#instanceUrl').text(instance.api_base_url);
+                        $('#instanceType').text(instance.server_type || 'Response');
+                        $('#instanceStatus').text(instance.connection_status);
+                        $('#instanceSensors').text(instance.sensors || 0);
+                        
+                        $('#instanceDetails').removeClass('d-none');
+                        $('#filtersCard').removeClass('d-none');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading instance details:', error);
+                }
+            });
+        }
+        
+        function loadAuditLogs(instanceId) {
+            // Show loading indicator
+            $('#logsLoading').removeClass('d-none');
+            $('#logsTable, #noLogs, #logsError').addClass('d-none');
+            
+            // Get filter values
+            const days = $('#daysFilter').val();
+            const username = $('#usernameFilter').val();
+            const eventType = $('#eventTypeFilter').val();
+            const limit = $('#limitFilter').val();
+            
+            // Build query parameters
+            let url = `/api/cbapi/audit-logs?instance_id=${instanceId}`;
+            if (days) url += `&days=${days}`;
+            if (username) url += `&username=${encodeURIComponent(username)}`;
+            if (eventType) url += `&event_type=${encodeURIComponent(eventType)}`;
+            if (limit) url += `&limit=${limit}`;
+            
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function(response) {
+                    $('#logsLoading').addClass('d-none');
+                    
+                    if (response.success && response.data) {
+                        const logs = response.data;
+                        
+                        if (logs.length === 0) {
+                            $('#noLogs').removeClass('d-none');
+                            return;
+                        }
+                        
+                        // Populate table
+                        populateLogsTable(logs);
+                        $('#logsTable').removeClass('d-none');
+                    } else {
+                        $('#errorMessage').text(response.message || 'Error fetching audit logs');
+                        $('#logsError').removeClass('d-none');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#logsLoading').addClass('d-none');
+                    $('#errorMessage').text(`Error: ${xhr.status} - ${xhr.statusText}`);
+                    $('#logsError').removeClass('d-none');
+                    console.error('Error loading audit logs:', error);
+                }
+            });
+        }
+        
+        function populateLogsTable(logs) {
+            const tableBody = $('#logsTableBody');
+            tableBody.empty();
+            
+            logs.forEach(function(log) {
+                const timestamp = formatTimestamp(log.timestamp);
+                const row = `
+                    <tr>
+                        <td class="timestamp">${timestamp}</td>
+                        <td>${escapeHtml(log.type || '')}</td>
+                        <td>${escapeHtml(log.username || '')}</td>
+                        <td>${escapeHtml(log.description || '')}</td>
+                        <td class="details-cell" title="Click to expand">${escapeHtml(log.details || '')}</td>
+                    </tr>
+                `;
+                tableBody.append(row);
+            });
+        }
+        
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '';
+            
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleString();
+            } catch (e) {
+                return timestamp;
+            }
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        function exportToCSV() {
+            const rows = document.querySelectorAll('#logsTableBody tr');
+            if (rows.length === 0) return;
+            
+            let csvContent = 'Timestamp,Type,Username,Description,Details\n';
+            
+            rows.forEach(function(row) {
+                const cells = row.querySelectorAll('td');
+                const rowData = Array.from(cells).map(cell => {
+                    // Replace commas and quotes to avoid CSV parsing issues
+                    let data = cell.textContent.replace(/"/g, '""');
+                    return `"${data}"`;
+                });
+                csvContent += rowData.join(',') + '\n';
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `cb_audit_logs_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 

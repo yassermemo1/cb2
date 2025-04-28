@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Carbon Black Multi-Tenant Console</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #333;
+            --light-bg: #f5f5f5;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+        }
+        
+        .navbar-brand, .nav-link {
+            color: white !important;
+        }
+        
+        .stats-card {
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            background-color: white;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stats-card .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        .stats-card .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-card .card-trend {
+            font-size: 0.9rem;
+        }
+        
+        .trend-up {
+            color: var(--success-color);
+        }
+        
+        .trend-down {
+            color: var(--danger-color);
+        }
+        
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-healthy {
+            background-color: var(--success-color);
+        }
+        
+        .status-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .status-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .status-unknown {
+            background-color: #aaa;
+        }
+        
+        .alert-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .alert-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+        
+        .alert-item .alert-time {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        
+        .alert-item .alert-critical {
+            color: var(--danger-color);
+        }
+        
+        .alert-item .alert-warning {
+            color: var(--warning-color);
+        }
+        
+        .alert-item .alert-info {
+            color: var(--accent-color);
+        }
+        
+        .filter-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        #timePeriodSelector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        #timePeriodSelector button {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        #timePeriodSelector button.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">Carbon Black Multi-Tenant Console</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/instances">Instances</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/agents">Agents</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cbapi"><i class="fas fa-terminal"></i> API Console</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cbaudit"><i class="fas fa-history"></i> Audit Logs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Title and Filters -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">Dashboard</h1>
+            <div class="d-flex gap-3">
+                <select id="instanceFilter" class="form-select">
+                    <option value="all">All Instances</option>
+                </select>
+                <div id="refreshButton" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </div>
+            </div>
+        </div>
+        
+        <!-- Time period selector -->
+        <div class="filter-container mb-4">
+            <div id="timePeriodSelector">
+                <button class="active" data-period="24h">24 Hours</button>
+                <button data-period="7d">7 Days</button>
+                <button data-period="30d">30 Days</button>
+                <button data-period="90d">90 Days</button>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="osTypeFilter" class="form-label">OS Type</label>
+                    <select id="osTypeFilter" class="form-select">
+                        <option value="all">All OS Types</option>
+                        <option value="WINDOWS">Windows</option>
+                        <option value="MAC">macOS</option>
+                        <option value="LINUX">Linux</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="statusFilter" class="form-label">Agent Status</label>
+                    <select id="statusFilter" class="form-select">
+                        <option value="all">All Statuses</option>
+                        <option value="Connected">Connected</option>
+                        <option value="Disconnected">Disconnected</option>
+                        <option value="Isolated">Isolated</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">Total Agents</div>
+                        <div class="card-value" id="totalAgentsValue">0</div>
+                        <div class="card-trend trend-up">
+                            <i class="bi bi-arrow-up-short"></i> <span id="totalAgentsTrend">0%</span> from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">Connected Agents</div>
+                        <div class="card-value" id="connectedAgentsValue">0</div>
+                        <div class="card-trend trend-up">
+                            <i class="bi bi-arrow-up-short"></i> <span id="connectedAgentsTrend">0%</span> from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">Disconnected Agents</div>
+                        <div class="card-value" id="disconnectedAgentsValue">0</div>
+                        <div class="card-trend trend-down">
+                            <i class="bi bi-arrow-down-short"></i> <span id="disconnectedAgentsTrend">0%</span> from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">Isolated Agents</div>
+                        <div class="card-value" id="isolatedAgentsValue">0</div>
+                        <div class="card-trend">
+                            <i class="bi bi-dash"></i> <span id="isolatedAgentsTrend">0%</span> from last period
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">Total Instances</div>
+                        <div class="card-value" id="totalInstancesValue">0</div>
+                        <div class="card-trend">
+                            <span id="instancesStatus">0 Active, 0 Inactive</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">Response Instances</div>
+                        <div class="card-value" id="responseInstancesValue">0</div>
+                        <div class="card-trend">
+                            <span id="responseInstancesStatus">0 Active, 0 Inactive</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">Protection Instances</div>
+                        <div class="card-value" id="protectionInstancesValue">0</div>
+                        <div class="card-trend">
+                            <span id="protectionInstancesStatus">0 Active, 0 Inactive</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="stats-card h-100">
+                    <div class="card-body">
+                        <div class="card-title">System Health</div>
+                        <div class="card-value" id="systemHealthValue">-</div>
+                        <div class="card-trend">
+                            <div id="systemHealthIndicator">
+                                <span class="status-indicator status-unknown"></span> Unknown
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-md-8 mb-3">
+                <div class="chart-container">
+                    <h3 class="chart-title">Agents Status Over Time</h3>
+                    <canvas id="agentStatusChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="chart-container">
+                    <h3 class="chart-title">Agents by OS Type</h3>
+                    <canvas id="osTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="chart-container">
+                    <h3 class="chart-title">Agent Sensor Versions</h3>
+                    <canvas id="sensorVersionChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="chart-container">
+                    <h3 class="chart-title">Instance Connection Status</h3>
+                    <canvas id="instanceStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts and Notifications -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="chart-container h-100">
+                    <h3 class="chart-title">Recent Alerts</h3>
+                    <div class="alert-container" id="alertsContainer">
+                        <!-- Alerts will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="chart-container h-100">
+                    <h3 class="chart-title">System Events</h3>
+                    <div class="alert-container" id="eventsContainer">
+                        <!-- Events will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard data and functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize charts
+            initializeCharts();
+            
+            // Load dashboard data
+            loadDashboardData();
+            
+            // Set up refresh button
+            document.getElementById('refreshButton').addEventListener('click', function() {
+                loadDashboardData();
+            });
+            
+            // Set up time period selector
+            const timePeriodButtons = document.querySelectorAll('#timePeriodSelector button');
+            timePeriodButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    timePeriodButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    loadDashboardData();
+                });
+            });
+            
+            // Set up filters
+            document.getElementById('instanceFilter').addEventListener('change', loadDashboardData);
+            document.getElementById('osTypeFilter').addEventListener('change', loadDashboardData);
+            document.getElementById('statusFilter').addEventListener('change', loadDashboardData);
+        });
+        
+        // Charts
+        let agentStatusChart, osTypeChart, sensorVersionChart, instanceStatusChart;
+        
+        function initializeCharts() {
+            // Agent Status Over Time Chart
+            const agentStatusCtx = document.getElementById('agentStatusChart').getContext('2d');
+            agentStatusChart = new Chart(agentStatusCtx, {
+                type: 'line',
+                data: {
+                    labels: [], // Will be populated with dates
+                    datasets: [
+                        {
+                            label: 'Connected',
+                            data: [],
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Disconnected',
+                            data: [],
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Isolated',
+                            data: [],
+                            borderColor: '#f39c12',
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // OS Type Chart
+            const osTypeCtx = document.getElementById('osTypeChart').getContext('2d');
+            osTypeChart = new Chart(osTypeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Windows', 'macOS', 'Linux', 'Other'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#f39c12',
+                            '#95a5a6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+            
+            // Sensor Version Chart
+            const sensorVersionCtx = document.getElementById('sensorVersionChart').getContext('2d');
+            sensorVersionChart = new Chart(sensorVersionCtx, {
+                type: 'bar',
+                data: {
+                    labels: [], // Will be populated with version numbers
+                    datasets: [{
+                        label: 'Agents Count',
+                        data: [],
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Instance Status Chart
+            const instanceStatusCtx = document.getElementById('instanceStatusChart').getContext('2d');
+            instanceStatusChart = new Chart(instanceStatusCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Connected', 'Connection Error', 'Authentication Failed', 'API Error', 'Unknown'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            '#2ecc71',
+                            '#e74c3c',
+                            '#f39c12',
+                            '#9b59b6',
+                            '#95a5a6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+        }
+        
+        function loadDashboardData() {
+            // Get selected filters
+            const instanceId = document.getElementById('instanceFilter').value;
+            const osType = document.getElementById('osTypeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const timePeriod = document.querySelector('#timePeriodSelector button.active').getAttribute('data-period');
+            
+            // Show loading state
+            document.querySelectorAll('.stats-card .card-value').forEach(el => {
+                el.innerHTML = '<small>Loading...</small>';
+            });
+            
+            // Fetch dashboard data from API
+            fetch(`/api/dashboard/data?instance=${instanceId}&os_type=${osType}&status=${status}&time_period=${timePeriod}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load dashboard data');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updateDashboardUI(data);
+                })
+                .catch(error => {
+                    console.error('Error loading dashboard data:', error);
+                    // Show error state
+                    document.querySelectorAll('.stats-card .card-value').forEach(el => {
+                        el.innerHTML = '<small>Error</small>';
+                    });
+                });
+                
+            // For demonstration, we'll use mock data
+            const mockData = generateMockDashboardData();
+            updateDashboardUI(mockData);
+        }
+        
+        function updateDashboardUI(data) {
+            // Update stats cards
+            document.getElementById('totalAgentsValue').textContent = data.stats.totalAgents;
+            document.getElementById('connectedAgentsValue').textContent = data.stats.connectedAgents;
+            document.getElementById('disconnectedAgentsValue').textContent = data.stats.disconnectedAgents;
+            document.getElementById('isolatedAgentsValue').textContent = data.stats.isolatedAgents;
+            
+            document.getElementById('totalInstancesValue').textContent = data.stats.totalInstances;
+            document.getElementById('responseInstancesValue').textContent = data.stats.responseInstances;
+            document.getElementById('protectionInstancesValue').textContent = data.stats.protectionInstances;
+            
+            document.getElementById('totalAgentsTrend').textContent = data.trends.totalAgents + '%';
+            document.getElementById('connectedAgentsTrend').textContent = data.trends.connectedAgents + '%';
+            document.getElementById('disconnectedAgentsTrend').textContent = data.trends.disconnectedAgents + '%';
+            document.getElementById('isolatedAgentsTrend').textContent = data.trends.isolatedAgents + '%';
+            
+            document.getElementById('instancesStatus').textContent = 
+                `${data.stats.activeInstances} Active, ${data.stats.totalInstances - data.stats.activeInstances} Inactive`;
+            document.getElementById('responseInstancesStatus').textContent = 
+                `${data.stats.activeResponseInstances} Active, ${data.stats.responseInstances - data.stats.activeResponseInstances} Inactive`;
+            document.getElementById('protectionInstancesStatus').textContent = 
+                `${data.stats.activeProtectionInstances} Active, ${data.stats.protectionInstances - data.stats.activeProtectionInstances} Inactive`;
+            
+            // Update system health indicator
+            updateSystemHealth(data.stats.systemHealth);
+            
+            // Update trend indicators (up/down arrows)
+            updateTrendIndicators(data.trends);
+            
+            // Update charts
+            updateCharts(data);
+            
+            // Update alerts and events
+            updateAlertsAndEvents(data.alerts, data.events);
+            
+            // Update instance filter dropdown options if needed
+            if (data.instances && data.instances.length > 0) {
+                updateInstanceFilterOptions(data.instances);
+            }
+        }
+        
+        function updateSystemHealth(health) {
+            const healthValue = document.getElementById('systemHealthValue');
+            const healthIndicator = document.getElementById('systemHealthIndicator');
+            
+            healthValue.textContent = health.status;
+            
+            let statusClass = 'status-unknown';
+            let statusText = 'Unknown';
+            
+            switch (health.status.toLowerCase()) {
+                case 'healthy':
+                    statusClass = 'status-healthy';
+                    statusText = 'Healthy';
+                    break;
+                case 'warning':
+                    statusClass = 'status-warning';
+                    statusText = 'Warning';
+                    break;
+                case 'critical':
+                    statusClass = 'status-danger';
+                    statusText = 'Critical';
+                    break;
+            }
+            
+            healthIndicator.innerHTML = `
+                <span class="status-indicator ${statusClass}"></span> ${statusText}
+            `;
+        }
+        
+        function updateTrendIndicators(trends) {
+            const totalAgentsTrendEl = document.querySelector('#totalAgentsValue + .card-trend');
+            const connectedAgentsTrendEl = document.querySelector('#connectedAgentsValue + .card-trend');
+            const disconnectedAgentsTrendEl = document.querySelector('#disconnectedAgentsValue + .card-trend');
+            const isolatedAgentsTrendEl = document.querySelector('#isolatedAgentsValue + .card-trend');
+            
+            updateTrendElement(totalAgentsTrendEl, trends.totalAgents);
+            updateTrendElement(connectedAgentsTrendEl, trends.connectedAgents);
+            updateTrendElement(disconnectedAgentsTrendEl, trends.disconnectedAgents);
+            updateTrendElement(isolatedAgentsTrendEl, trends.isolatedAgents);
+        }
+        
+        function updateTrendElement(element, value) {
+            element.classList.remove('trend-up', 'trend-down');
+            const iconEl = element.querySelector('i');
+            
+            if (value > 0) {
+                element.classList.add('trend-up');
+                iconEl.className = 'bi bi-arrow-up-short';
+            } else if (value < 0) {
+                element.classList.add('trend-down');
+                iconEl.className = 'bi bi-arrow-down-short';
+            } else {
+                iconEl.className = 'bi bi-dash';
+            }
+        }
+        
+        function updateCharts(data) {
+            // Update Agent Status Chart
+            agentStatusChart.data.labels = data.charts.agentStatus.labels;
+            agentStatusChart.data.datasets[0].data = data.charts.agentStatus.connected;
+            agentStatusChart.data.datasets[1].data = data.charts.agentStatus.disconnected;
+            agentStatusChart.data.datasets[2].data = data.charts.agentStatus.isolated;
+            agentStatusChart.update();
+            
+            // Update OS Type Chart
+            osTypeChart.data.datasets[0].data = [
+                data.charts.osType.windows,
+                data.charts.osType.mac,
+                data.charts.osType.linux,
+                data.charts.osType.other
+            ];
+            osTypeChart.update();
+            
+            // Update Sensor Version Chart
+            sensorVersionChart.data.labels = data.charts.sensorVersion.labels;
+            sensorVersionChart.data.datasets[0].data = data.charts.sensorVersion.counts;
+            sensorVersionChart.update();
+            
+            // Update Instance Status Chart
+            instanceStatusChart.data.datasets[0].data = [
+                data.charts.instanceStatus.connected,
+                data.charts.instanceStatus.connectionError,
+                data.charts.instanceStatus.authFailed,
+                data.charts.instanceStatus.apiError,
+                data.charts.instanceStatus.unknown
+            ];
+            instanceStatusChart.update();
+        }
+        
+        function updateAlertsAndEvents(alerts, events) {
+            const alertsContainer = document.getElementById('alertsContainer');
+            const eventsContainer = document.getElementById('eventsContainer');
+            
+            // Clear containers
+            alertsContainer.innerHTML = '';
+            eventsContainer.innerHTML = '';
+            
+            // Add alerts
+            if (alerts.length === 0) {
+                alertsContainer.innerHTML = '<div class="alert-item">No alerts found</div>';
+            } else {
+                alerts.forEach(alert => {
+                    const alertEl = document.createElement('div');
+                    alertEl.className = 'alert-item';
+                    alertEl.innerHTML = `
+                        <div class="alert-${alert.severity}">${alert.message}</div>
+                        <div class="alert-time">${formatDate(alert.timestamp)} - ${alert.instance}</div>
+                    `;
+                    alertsContainer.appendChild(alertEl);
+                });
+            }
+            
+            // Add events
+            if (events.length === 0) {
+                eventsContainer.innerHTML = '<div class="alert-item">No events found</div>';
+            } else {
+                events.forEach(event => {
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'alert-item';
+                    eventEl.innerHTML = `
+                        <div>${event.message}</div>
+                        <div class="alert-time">${formatDate(event.timestamp)} - ${event.instance}</div>
+                    `;
+                    eventsContainer.appendChild(eventEl);
+                });
+            }
+        }
+        
+        function updateInstanceFilterOptions(instances) {
+            const instanceFilter = document.getElementById('instanceFilter');
+            const currentValue = instanceFilter.value;
+            
+            // Clear all options except 'All Instances'
+            while (instanceFilter.options.length > 1) {
+                instanceFilter.remove(1);
+            }
+            
+            // Add instance options
+            instances.forEach(instance => {
+                const option = document.createElement('option');
+                option.value = instance.id;
+                option.textContent = instance.name;
+                instanceFilter.appendChild(option);
+            });
+            
+            // Restore selected value if possible
+            if (currentValue !== 'all') {
+                const exists = Array.from(instanceFilter.options).some(option => option.value === currentValue);
+                instanceFilter.value = exists ? currentValue : 'all';
+            }
+        }
+        
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        }
+        
+        // Mock data generator for demonstration
+        function generateMockDashboardData() {
+            const mockData = {
+                stats: {
+                    totalAgents: Math.floor(Math.random() * 500) + 100,
+                    connectedAgents: 0,
+                    disconnectedAgents: 0,
+                    isolatedAgents: 0,
+                    totalInstances: Math.floor(Math.random() * 10) + 2,
+                    responseInstances: 0,
+                    protectionInstances: 0,
+                    activeInstances: 0,
+                    activeResponseInstances: 0,
+                    activeProtectionInstances: 0,
+                    systemHealth: {
+                        status: ['Healthy', 'Warning', 'Critical'][Math.floor(Math.random() * 3)]
+                    }
+                },
+                trends: {
+                    totalAgents: Math.floor(Math.random() * 20) - 10,
+                    connectedAgents: Math.floor(Math.random() * 20) - 5,
+                    disconnectedAgents: Math.floor(Math.random() * 20) - 10,
+                    isolatedAgents: Math.floor(Math.random() * 10) - 5
+                },
+                charts: {
+                    agentStatus: {
+                        labels: Array.from({length: 7}, (_, i) => {
+                            const date = new Date();
+                            date.setDate(date.getDate() - (6 - i));
+                            return date.toLocaleDateString();
+                        }),
+                        connected: Array.from({length: 7}, () => Math.floor(Math.random() * 400) + 100),
+                        disconnected: Array.from({length: 7}, () => Math.floor(Math.random() * 100) + 10),
+                        isolated: Array.from({length: 7}, () => Math.floor(Math.random() * 20))
+                    },
+                    osType: {
+                        windows: Math.floor(Math.random() * 300) + 50,
+                        mac: Math.floor(Math.random() * 100) + 20,
+                        linux: Math.floor(Math.random() * 50) + 10,
+                        other: Math.floor(Math.random() * 10)
+                    },
+                    sensorVersion: {
+                        labels: ['v1.0.0', 'v1.1.0', 'v1.2.0', 'v1.3.0', 'v1.4.0'],
+                        counts: Array.from({length: 5}, () => Math.floor(Math.random() * 100) + 10)
+                    },
+                    instanceStatus: {
+                        connected: Math.floor(Math.random() * 8) + 1,
+                        connectionError: Math.floor(Math.random() * 3),
+                        authFailed: Math.floor(Math.random() * 2),
+                        apiError: Math.floor(Math.random() * 2),
+                        unknown: Math.floor(Math.random() * 1)
+                    }
+                },
+                alerts: Array.from({length: Math.floor(Math.random() * 5) + 3}, (_, i) => ({
+                    message: `Alert ${i+1}: ${['Agent disconnected', 'Connection failure', 'Authentication error', 'API limit reached'][Math.floor(Math.random() * 4)]}`,
+                    severity: ['critical', 'warning', 'info'][Math.floor(Math.random() * 3)],
+                    timestamp: new Date(Date.now() - Math.floor(Math.random() * 86400000)).toISOString(),
+                    instance: `Instance ${Math.floor(Math.random() * 5) + 1}`
+                })),
+                events: Array.from({length: Math.floor(Math.random() * 7) + 5}, (_, i) => ({
+                    message: `Event ${i+1}: ${['Agent synced', 'Instance connected', 'Configuration updated', 'Dashboard viewed'][Math.floor(Math.random() * 4)]}`,
+                    timestamp: new Date(Date.now() - Math.floor(Math.random() * 86400000)).toISOString(),
+                    instance: `Instance ${Math.floor(Math.random() * 5) + 1}`
+                })),
+                instances: Array.from({length: Math.floor(Math.random() * 5) + 2}, (_, i) => ({
+                    id: (i + 1).toString(),
+                    name: `Instance ${i + 1}`
+                }))
+            };
+            
+            // Calculate derived stats
+            mockData.stats.connectedAgents = Math.floor(mockData.stats.totalAgents * 0.8);
+            mockData.stats.disconnectedAgents = Math.floor(mockData.stats.totalAgents * 0.15);
+            mockData.stats.isolatedAgents = mockData.stats.totalAgents - mockData.stats.connectedAgents - mockData.stats.disconnectedAgents;
+            
+            mockData.stats.responseInstances = Math.floor(mockData.stats.totalInstances * 0.6);
+            mockData.stats.protectionInstances = mockData.stats.totalInstances - mockData.stats.responseInstances;
+            
+            mockData.stats.activeInstances = Math.floor(mockData.stats.totalInstances * 0.9);
+            mockData.stats.activeResponseInstances = Math.floor(mockData.stats.responseInstances * 0.9);
+            mockData.stats.activeProtectionInstances = mockData.stats.activeInstances - mockData.stats.activeResponseInstances;
+            
+            return mockData;
+        }
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 

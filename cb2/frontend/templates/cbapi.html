@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}API Console{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Carbon Black API Console</h2>
+            <p class="text-muted">Execute API commands against your Carbon Black instances</p>
+        </div>
+    </div>
+
+    <div id="alertsContainer"></div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Instance Selection</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="instanceSelect" class="form-label">Select Carbon Black Instance</label>
+                        <select class="form-select" id="instanceSelect">
+                            <option value="">Select an instance...</option>
+                        </select>
+                    </div>
+                    <div id="instanceDetails" class="d-none">
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">URL</h6>
+                                    <small id="instanceUrl"></small>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Type</h6>
+                                    <small id="instanceType"></small>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Status</h6>
+                                    <small id="instanceStatus"></small>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Sensors</h6>
+                                    <small id="instanceSensors"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">API Request</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle"></i> Format: 
+                            <code>{ "id": 1, "method": "GET", "url": "/api/v1/sensor" }</code>
+                        </small>
+                    </div>
+                    <div id="requestEditor" style="height: 250px; border: 1px solid #ccc;"></div>
+                    <div class="mt-3">
+                        <button id="executeBtn" class="btn btn-primary">Execute Request</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Response</h5>
+                </div>
+                <div class="card-body">
+                    <div id="responseViewer" style="height: 300px; border: 1px solid #ccc;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs/loader.js"></script>
+<script>
+    $(document).ready(function() {
+        // Load instances for the selector
+        loadInstances();
+        
+        // Set up event listeners
+        $('#instanceSelect').on('change', function() {
+            const instanceId = $(this).val();
+            if (instanceId) {
+                showInstanceDetails(instanceId);
+            } else {
+                $('#instanceDetails').addClass('d-none');
+            }
+        });
+        
+        $('#executeBtn').on('click', function() {
+            executeRequest();
+        });
+        
+        // Initialize Monaco Editor
+        require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs' }});
+        
+        require(['vs/editor/editor.main'], function() {
+            // Create API request editor
+            window.requestEditor = monaco.editor.create(document.getElementById('requestEditor'), {
+                value: '{\n\t"id": 1,\n\t"method": "GET",\n\t"url": "/api/v1/sensor"\n}',
+                language: 'json',
+                theme: 'vs',
+                automaticLayout: true,
+                minimap: { enabled: false }
+            });
+            
+            // Create Response viewer
+            window.responseViewer = monaco.editor.create(document.getElementById('responseViewer'), {
+                value: '// Response will be displayed here',
+                language: 'json',
+                theme: 'vs',
+                readOnly: true,
+                automaticLayout: true,
+                minimap: { enabled: false }
+            });
+        });
+    });
+    
+    function loadInstances() {
+        $.ajax({
+            url: '/api/instances/',
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.data) {
+                    const instanceSelector = $('#instanceSelect');
+                    instanceSelector.empty();
+                    instanceSelector.append('<option value="">Select an instance...</option>');
+                    
+                    response.data.forEach(function(instance) {
+                        instanceSelector.append(`<option value="${instance.id}">${instance.name} (${instance.connection_status})</option>`);
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading instances:', error);
+                showAlert('danger', 'Error loading instances. Please refresh the page.');
+            }
+        });
+    }
+    
+    function showInstanceDetails(instanceId) {
+        $.ajax({
+            url: `/api/instances/${instanceId}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.data) {
+                    const instance = response.data;
+                    $('#instanceUrl').text(instance.api_base_url);
+                    $('#instanceType').text(instance.server_type || 'Unknown');
+                    $('#instanceStatus').text(instance.connection_status);
+                    $('#instanceSensors').text(instance.sensors || 0);
+                    
+                    $('#instanceDetails').removeClass('d-none');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading instance details:', error);
+                showAlert('danger', 'Error loading instance details');
+            }
+        });
+    }
+    
+    function executeRequest() {
+        const instanceId = $('#instanceSelect').val();
+        if (!instanceId) {
+            showAlert('warning', 'Please select an instance first');
+            return;
+        }
+        
+        try {
+            const requestData = JSON.parse(window.requestEditor.getValue());
+            $('#executeBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Executing...');
+            
+            $.ajax({
+                url: '/api/cbapi/execute',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    instance_id: instanceId,
+                    request: requestData
+                }),
+                success: function(response) {
+                    $('#executeBtn').prop('disabled', false).html('Execute Request');
+                    
+                    if (response.success) {
+                        window.responseViewer.setValue(JSON.stringify(response.data, null, 2));
+                    } else {
+                        window.responseViewer.setValue(JSON.stringify({
+                            error: response.message || 'Unknown error'
+                        }, null, 2));
+                        showAlert('danger', response.message || 'Error executing request');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#executeBtn').prop('disabled', false).html('Execute Request');
+                    
+                    try {
+                        const errorData = xhr.responseJSON;
+                        window.responseViewer.setValue(JSON.stringify(errorData, null, 2));
+                        showAlert('danger', errorData.message || `Error: ${xhr.status} - ${xhr.statusText}`);
+                    } catch (e) {
+                        window.responseViewer.setValue(JSON.stringify({
+                            error: `${xhr.status} - ${xhr.statusText}`
+                        }, null, 2));
+                        showAlert('danger', `Error: ${xhr.status} - ${xhr.statusText}`);
+                    }
+                }
+            });
+        } catch (e) {
+            showAlert('danger', `Invalid JSON in request: ${e.message}`);
+        }
+    }
+    
+    function showAlert(type, message) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        $('#alertsContainer').html(alertHtml);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+</script>
+{% endblock %} 
